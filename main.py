@@ -33,7 +33,7 @@ def extract_coordinates(loc_str):
 # 🌍 App layout
 st.set_page_config(page_title="Liberalitas Map", layout="wide")
 st.title("📍 Inscriptions of *Liberalitas*")
-st.markdown("Explore locations and transcriptions of Roman inscriptions mentioning *liberalitas*.")
+st.markdown("Explore locations and transcriptions of Roman inscriptions mentioning *Liberalitas*.")
 
 # 📊 Load data
 df = load_data()
