@@ -5,24 +5,28 @@ from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 import html
 
-# 🔗 Replace this with your real raw CSV URL from GitHub
-CSV_URL = "https://raw.githubusercontent.com/lapis82/liberalita-edh-20250714/refs/heads/main/liberalita_edh.csv"
+# 🔗 Replace this with your actual GitHub CSV raw URL
+CSV_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/liberalita_edh.csv"
 
-# Load data from GitHub
+# 🟥 List of CIL/IL reference numbers from the PDF
+pdf_refs = [
+    "CILA 03-01", "CIL VIII 937", "CIL VIII 1223", "CIL VIII 1495", "CIL VIII 5142",
+    "CIL VIII 5365", "CIL VIII 5366", "CIL VIII 10523", "CIL VIII 12058",
+    "CIL VIII 26273", "IL Alg 02-03 10120", "IL Afr 511", "CIL X 6529", "AE 1955 151"
+]
+
+# Load the CSV
 @st.cache_data
 def load_data():
     df = pd.read_csv(CSV_URL)
     coords_col = 'coordinates (lat,lng)'
-    
-    # Fallback handling for rows 30 and 68 (index 29, 67)
     if pd.isna(df.loc[29, coords_col]):
         df.loc[29, coords_col] = df.loc[29, coords_col]
     if pd.isna(df.loc[67, coords_col]):
         df.loc[67, coords_col] = df.loc[67, coords_col]
-    
     return df
 
-# Parse coordinates from string
+# Helper: parse coordinates
 def extract_coordinates(loc_str):
     try:
         lat, lon = map(float, loc_str.strip().split(","))
@@ -30,22 +34,23 @@ def extract_coordinates(loc_str):
     except:
         return None, None
 
-# 🌍 App layout
+# Helper: check if transcription contains any of the PDF refs
+def matches_pdf_refs(transcription):
+    return any(ref in transcription for ref in pdf_refs)
+
+# Streamlit UI setup
 st.set_page_config(page_title="Liberalitas Map", layout="wide")
 st.title("📍 Inscriptions of *Liberalitas*")
-st.markdown("Explore locations and transcriptions of Roman inscriptions mentioning *Liberalitas*.")
+st.markdown("Explore all known inscriptions, with those from the attached PDF highlighted in red.")
 
-# 📊 Load data
 df = load_data()
-
-# Sidebar filter
 all_regions = df['province / Italic region'].dropna().unique()
 selected_region = st.sidebar.selectbox("🗺️ Filter by Region", ["All"] + sorted(all_regions.tolist()))
 
 if selected_region != "All":
     df = df[df['province / Italic region'] == selected_region]
 
-# 🌍 Initialize map
+# 🗺️ Create Folium map
 m = folium.Map(location=(41.9, 12.5), zoom_start=5)
 marker_cluster = MarkerCluster().add_to(m)
 
@@ -62,13 +67,15 @@ for _, row in df.iterrows():
     if lat is None or lon is None:
         continue
 
-    # ✂️ Clean transcription: remove all metadata before last colon
+    # 🧼 Clean transcription: keep only content after last colon
     if ":" in transcription_raw:
         transcription_clean = transcription_raw.split(":")[-1].strip()
     else:
         transcription_clean = transcription_raw
 
-    # 📜 HTML popup
+    # Check if this matches one of the PDF-listed inscriptions
+    is_highlighted = matches_pdf_refs(transcription_raw)
+
     popup_html = f"""
     <div style="width: 300px; max-height: 250px; overflow-y: auto; font-size: 13px;">
         <strong><u>Province:</u></strong> {html.escape(str(province))}<br>
@@ -77,9 +84,12 @@ for _, row in df.iterrows():
         <pre style="white-space: pre-wrap;">{html.escape(transcription_clean)}</pre>
     </div>
     """
+
+    marker_color = "red" if is_highlighted else "blue"
     folium.Marker(
         location=(lat, lon),
-        popup=folium.Popup(popup_html, max_width=300)
+        popup=folium.Popup(popup_html, max_width=300),
+        icon=folium.Icon(color=marker_color)
     ).add_to(marker_cluster)
 
 # Show the map
