@@ -6,7 +6,7 @@ from streamlit_folium import st_folium
 import html
 
 # 🔗 Replace this with your actual GitHub CSV raw URL
-CSV_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/liberalita_edh.csv"
+CSV_URL = "https://raw.githubusercontent.com/lapis82/liberalita-edh-20250714/refs/heads/main/liberalita_edh.csv" 
 
 # 🟥 List of CIL/IL reference numbers from the PDF
 pdf_refs = [
